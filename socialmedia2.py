@@ -7,11 +7,13 @@
 from contextlib import ExitStack
 import numpy as np
 import glob
-import plotly.plotly as py
-import plotly.tools as tls
+# import plotly.plotly as py
+# import plotly.tools as tls
 from matplotlib import pyplot as plt
 from collections import Counter
 import re
+
+
 
 
 def chunks(l, n):
@@ -28,6 +30,7 @@ def get_thread_lengths(lst):
             length += len(ii)
         all_length.append(length)
     return all_length
+
 
 def calculate_means(lst):
     all_means = []
@@ -46,15 +49,13 @@ def check_time(time, counter):
         pass
     return counter
 
+
 def scatter_plot(means):
     """Sequential coherence"""
-
-    x1 = means[0]
-    y1 = means[1]
-    x2 = means[2]
-    y2 = means[3]
-
-
+    for x1, y1, x2, y2 in means:
+        plt.scatter(x1, y1)
+        plt.scatter(x2, y2)
+    plt.show()
 
 
 def retrieve_means(matrices):
@@ -74,7 +75,7 @@ def retrieve_means(matrices):
         check = False
         sec_m = np.flip(m)  # This is needed in order to determine the range of the double interpreter.
         for i in range(len(sec_m)):
-            if sec_m[i][0] != "_" and check == False:
+            if sec_m[i][0] != "_" and check is False:
                 c1 += 1
             else:
                 check = True
@@ -95,7 +96,6 @@ def retrieve_means(matrices):
         thread_lst1.append(threads1)
         thread_lst2.append(threads2)
 
-
     thr_all1 = get_thread_lengths(thread_lst1)
     thr_all2 = get_thread_lengths(thread_lst1)
 
@@ -114,25 +114,39 @@ def retrieve_means(matrices):
         means_lst.append((next(l1), next(l2), next(l3), next(l4)))
     return means_lst
 
+
 def main():
     matrix_lst = []
     matrix_lst2 = []
-    filenames = [txt_file for txt_file in glob.glob('data/*/*')]
-    with ExitStack() as stack:
-        files = [stack.enter_context(open(fname)) for fname in filenames]
-        chunk_gen = chunks(files, 4)
-        for gen in chunk_gen:
-            for f1, f2, f3, f4 in zip(*gen):
-                e1 = np.array(f1.split('¦'))
-                e2 = np.array(f2.split('¦'))
-                e3 = np.array(f3.split('¦'))
-                e4 = np.array(f4.split('¦'))
-                print(len(e1), len(e2), len(e3), len(e4))
-                m = np.column_stack((e1, e2, e3[2:], e4))
-                matrix_lst.append(m)
-                matrix_lst2.append((e1, e2, e3, e4))
-                # for i in range(len(m)):
-                #     print(m[i][0], m[i][1], m[i][2], m[i][3]) # , m[i][4], m[i][5], m[i][6], m[i][7])
+    t_list = []
+    s_list = []
+    w_list = []
+    o_list = []
+    for filename in glob.glob('data/*/*'):
+        if filename.endswith("_t_.txt"):
+            t_list.append(filename)
+        elif filename.endswith("_s_.txt"):
+            s_list.append(filename)
+        elif filename.endswith("_w_.txt"):
+            w_list.append(filename)
+        else:
+            o_list.append(filename)
+    for o, s, t, w in zip(o_list, s_list, t_list, w_list):
+        with open(o, 'r') as f1, open(s, 'r') as f2, open(t, 'r') as f3, open(w, 'r') as f4:
+            f1 = f1.read()
+            f2 = f2.read()
+            f3 = f3.read()
+            f4 = f4.read()
+            e1 = np.array(f1.split('¦'))
+            e2 = np.array(f2.split('¦'))
+            e3 = np.array(f3.split('¦'))
+            e4 = np.array(f4.split('¦'))
+            print(len(e1), len(e2), len(e3), len(e4))
+            m = np.column_stack((e1, e2, e3[2:], e4))
+            matrix_lst.append(m)
+            matrix_lst2.append((e1, e2, e3, e4))
+            # for i in range(len(m)):
+            #     print(m[i][0], m[i][1], m[i][2], m[i][3]) # , m[i][4], m[i][5], m[i][6], m[i][7])
 
     means = retrieve_means(matrix_lst)
 
