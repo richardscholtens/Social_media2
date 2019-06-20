@@ -7,8 +7,7 @@
 from contextlib import ExitStack
 import numpy as np
 import glob
-# import plotly.plotly as py
-# import plotly.tools as tls
+
 from matplotlib import pyplot as plt
 import matplotlib.pylab as plb
 from collections import Counter
@@ -34,6 +33,7 @@ def get_thread_lengths(lst):
 
 
 def calculate_mean(lst):
+    #return np.log(sum(lst))/np.log(len(lst))
     return sum(lst)/len(lst)
 
 
@@ -77,13 +77,13 @@ def interface_splitter(matrix):
     return interface_matrix1, interface_matrix2
 
 
-def mean_thread_length(matrix):
+def thread_length(matrix):
     thread_length_counter = []
     turn_counter = 0
     prev_o = None
     prev_s = None
     for s, o in zip(matrix[0], matrix[1]):
-        # print(s, o)
+
         if s and prev_o:
             turn_counter += 1
         if o and prev_s:
@@ -94,18 +94,11 @@ def mean_thread_length(matrix):
         prev_o = o
         prev_s = s
     return thread_length_counter
-    # s = iter(matrix[0])
-    # o = iter(matrix[1])
-    # for i in range(len(matrix[0])):
-    #     print(s[i], o[i])
-    #     if s[i] and next(o[i]):
-    #         turn_counter += 1
-    #     if o[i] and next(s[i]):
-    #         turn_counter += 1
-    #     if o[i] == '/' or s[i] == '/':
-    #         thread_length_counter.append(turn_counter)
-    #         turn_counter = 0
-    # return thread_length_counter
+
+#def conversation_length(matrix):
+
+
+
 
 
 def retrieve_means(matrices):
@@ -202,16 +195,53 @@ def main():
             # for i in m:
             #     print(i)
 
+
+    conversations = []
+    thr_means1 = []
+    thr_means2 = []
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
-        mean1 = mean_thread_length(interface1)
-        mean2 = mean_thread_length(interface2)
+        thr_length1 = thread_length(interface1)
+        thr_length2 = thread_length(interface2)
+        conversations.append((thr_length1, thr_length2))
         print("Interface 1:")
-        print(calculate_mean(mean1))
+        print(calculate_mean(thr_length1))
+        mean1 = calculate_mean(thr_length1)
         print("Interface 2:")
-        print(calculate_mean(mean2))
+        print(calculate_mean(thr_length2))
+        mean2 = calculate_mean(thr_length2)
+        thr_means1.append(mean1)
+        thr_means2.append(mean2)
 
-    # scatter_plot(means)
+    #total_turns = sum([pair[0] for pair in conversations])
+    turns_lst1 = []
+    turns_lst2 = []
+    conv_means1 = []
+    conv_means2 = []
+
+    for i1, i2 in conversations:
+
+        turns_lst1.append(sum(i1))
+        turns_lst2.append(sum(i2))
+        conv_mean1 = calculate_mean(turns_lst1)
+        conv_mean2 = calculate_mean(turns_lst2)
+        print(calculate_mean(turns_lst1))
+        print(calculate_mean(turns_lst2))
+
+        conv_means1.append(conv_mean1)
+        conv_means2.append(conv_mean2)
+
+
+    means_lst = []    
+    l1 = iter(thr_means1)
+    l2 = iter(conv_means1)
+    l3 = iter(thr_means2)
+    l4 = iter(conv_means2)
+    for i in range(len(thr_means1)):
+        means_lst.append((next(l1), next(l2), next(l3), next(l4)))
+
+    print(means_lst)
+    scatter_plot(means_lst)
 
 
 if __name__ == '__main__':
