@@ -33,12 +33,8 @@ def get_thread_lengths(lst):
     return all_length
 
 
-def calculate_means(lst):
-    all_means = []
-    for i in lst:
-        mean = i / sum(lst)
-        all_means.append(mean)
-    return all_means
+def calculate_mean(lst):
+    return sum(lst)/len(lst)
 
 
 def check_time(time, counter):
@@ -66,6 +62,50 @@ def scatter_plot(means):
     plb.plot(interface2_thread, p2(interface2_thread), 'm-')
     plt.show()
 
+
+def interface_splitter(matrix):
+    reversed = np.flip(matrix[3])
+    for i in range(len(reversed)):
+        if reversed[i] == '_':
+            index = i
+            break
+    interface_matrix1 = []
+    interface_matrix2 = []
+    for i in range(len(matrix)):
+        interface_matrix1.append(matrix[i][:-index])
+        interface_matrix2.append(matrix[i][index:])
+    return interface_matrix1, interface_matrix2
+
+
+def mean_thread_length(matrix):
+    thread_length_counter = []
+    turn_counter = 0
+    prev_o = None
+    prev_s = None
+    for s, o in zip(matrix[0], matrix[1]):
+        # print(s, o)
+        if s and prev_o:
+            turn_counter += 1
+        if o and prev_s:
+            turn_counter += 1
+        if o == '/' or s == '/':
+            thread_length_counter.append(turn_counter)
+            turn_counter = 0
+        prev_o = o
+        prev_s = s
+    return thread_length_counter
+    # s = iter(matrix[0])
+    # o = iter(matrix[1])
+    # for i in range(len(matrix[0])):
+    #     print(s[i], o[i])
+    #     if s[i] and next(o[i]):
+    #         turn_counter += 1
+    #     if o[i] and next(s[i]):
+    #         turn_counter += 1
+    #     if o[i] == '/' or s[i] == '/':
+    #         thread_length_counter.append(turn_counter)
+    #         turn_counter = 0
+    # return thread_length_counter
 
 
 def retrieve_means(matrices):
@@ -151,16 +191,27 @@ def main():
             e2 = np.array(f2.split('¦'))
             e3 = np.array(f3.split('¦'))
             e4 = np.array(f4.split('¦'))
-            print(len(e1), len(e2), len(e3), len(e4))
+            # print(len(e1), len(e2), len(e3[2:]), len(e4))
             m = np.column_stack((e1, e2, e3[2:], e4))
             matrix_lst.append(m)
-            matrix_lst2.append((e1, e2, e3, e4))
+            matrix_lst2.append((e1, e2, e3[2:], e4))
             # for i in range(len(m)):
             #     print(m[i][0], m[i][1], m[i][2], m[i][3]) # , m[i][4], m[i][5], m[i][6], m[i][7])
 
-    means = retrieve_means(matrix_lst)
+    # means = retrieve_means(matrix_lst)
+            # for i in m:
+            #     print(i)
 
-    scatter_plot(means)
+    for i in matrix_lst2:
+        interface1, interface2 = interface_splitter(i)
+        mean1 = mean_thread_length(interface1)
+        mean2 = mean_thread_length(interface2)
+        print("Interface 1:")
+        print(calculate_mean(mean1))
+        print("Interface 2:")
+        print(calculate_mean(mean2))
+
+    # scatter_plot(means)
 
 
 if __name__ == '__main__':
