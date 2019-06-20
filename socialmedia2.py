@@ -10,6 +10,7 @@ import glob
 # import plotly.plotly as py
 # import plotly.tools as tls
 from matplotlib import pyplot as plt
+import matplotlib.pylab as plb
 from collections import Counter
 import re
 
@@ -52,10 +53,19 @@ def check_time(time, counter):
 
 def scatter_plot(means):
     """Sequential coherence"""
-    for x1, y1, x2, y2 in means:
-        plt.scatter(x1, y1)
-        plt.scatter(x2, y2)
+    interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*means)
+    plt.scatter(interface1_thread, interface1_conv, color='r')
+    plt.scatter(interface2_thread, interface2_conv, color='g')
+    plt.xlabel('Mean thread length')
+    plt.ylabel('Mean conversation length')
+    z1 = np.polyfit(interface1_thread, interface1_conv, 1)
+    p1 = np.poly1d(z1)
+    z2 = np.polyfit(interface2_thread, interface2_conv, 1)
+    p2 = np.poly1d(z2)
+    plb.plot(interface1_thread, p1(interface1_thread), 'm-')
+    plb.plot(interface2_thread, p2(interface2_thread), 'm-')
     plt.show()
+
 
 
 def retrieve_means(matrices):
