@@ -12,8 +12,8 @@ from matplotlib import pyplot as plt
 import matplotlib.pylab as plb
 from collections import Counter
 import re
-from nltk.corpus import stopwords 
-from nltk.tokenize import word_tokenize 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 def chunks(l, n):
@@ -47,9 +47,9 @@ def check_time(time, counter):
     return counter
 
 
-def scatter_plot(means, xlabel, ylabel):
+def scatter_plot(info, xlabel, ylabel):
     """Sequential coherence"""
-    interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*means)
+    interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*info)
     plt.scatter(interface1_thread, interface1_conv, color='r')
     plt.scatter(interface2_thread, interface2_conv, color='g')
     plt.xlabel(xlabel)
@@ -62,6 +62,39 @@ def scatter_plot(means, xlabel, ylabel):
     plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='r', label='Double interface 2')
     plt.legend()
     plt.show()
+
+
+def bar_plot(bars1, bars2, xlabel, ylabel):
+    # width of the bars
+    barWidth = 0.3
+     
+
+
+    print(bars1)
+    # Choose the height of the blue bars
+    bars1 = [10, 9, 2]
+    # Choose the height of the cyan bars
+    bars2 = [10.8, 9.5, 4.5]
+     
+
+    # The x position of bars
+    r1 = np.arange(len(bars1))
+    r2 = [x + barWidth for x in r1]
+     
+    # Create blue bars
+    plt.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', capsize=7, label='poacee')
+     
+    # Create cyan bars
+    plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='sorgho')
+     
+    # general layout
+    plt.xticks([r + barWidth for r in range(len(bars1))], ['cond_A', 'cond_B', 'cond_C'])
+    plt.ylabel('height')
+    plt.legend()
+     
+    # Show graphic
+    plt.show()
+
 
 
 def interface_splitter(matrix):
@@ -110,21 +143,9 @@ def structure_data(list1, list2, list3, list4):
     return structure_lst
 
 
-def copy_language(matrix):
-#    s_conv = "".join(matrix[0])
-    print(len(matrix[0]))
-    # s_conv = np.array2string(matrix[0])
-    # s_conv = s_conv.lower()
-#    o_conv = "".join(matrix[1])
-
-    # o_conv = np.array2string(matrix[1])
-    # o_conv = o_conv.lower()
-
-
+def cosine_similarity_and_sentiment(matrix):
     s_conv = ""
     o_conv = ""
-
-
     for s, o in zip(matrix[0], matrix[1]):
         if not s:
             s = " "
@@ -132,39 +153,28 @@ def copy_language(matrix):
             o = " "
         s_conv += s
         o_conv += o
-
     s_conv = s_conv.lower()
     o_conv = o_conv.lower()
+    vect = TfidfVectorizer(min_df=1)
+    tfidf = vect.fit_transform([s_conv, o_conv])
+    lst = (tfidf * tfidf.T).A
+    compound1, pos1, neu1, neg1 = sentimentfinder(s_conv)
+    compound2, pos2, neu2, neg2 = sentimentfinder(o_conv)
 
-    print(o_conv)
-    # tokenization 
-    X_list = word_tokenize(s_conv)  
-    Y_list = word_tokenize(o_conv) 
-      
-    # sw contains the list of stopwords 
-    sw = stopwords.words('english')  
-    l1 =[];l2 =[] 
-      
-    # remove stop words from string 
-    X_set = {w for w in X_list if not w in sw}  
-    Y_set = {w for w in Y_list if not w in sw} 
-      
-    # form a set containing keywords of both strings  
-    rvector = X_set.union(Y_set)  
-    for w in rvector: 
-        if w in X_set: l1.append(1) # create a vector 
-        else: l1.append(0) 
-        if w in Y_set: l2.append(1) 
-        else: l2.append(0) 
-    c = 0
-      
-    # cosine formula  
-    for i in range(len(rvector)): 
-            c+= l1[i]*l2[i] 
-    cosine = c / float((sum(l1)*sum(l2))**0.5) 
-    print("similarity: ", cosine)
+    s_tup = (compound1, pos1, neu1, neg1)
+    o_tup = (compound2, pos2, neu2, neg2)
 
-    return cosine
+    return lst[0][1], s_tup, o_tup
+
+
+def sentimentfinder(string):
+    sid = SentimentIntensityAnalyzer()
+    scores = sid.polarity_scores(string)
+    return scores['compound'], scores['pos'], scores['neu'], scores['neg']
+
+
+
+
 
 def main():
     matrix_lst = []
@@ -212,13 +222,16 @@ def main():
     time_means2 = []
     sim_lst1 = []
     sim_lst2 = []
+    compound_lst1 = []
+    compound_lst2 = []
+
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
-        similiarity1 = copy_language(interface1)
-        similiarity2 = copy_language(interface2)
+        similiarity1, sent_s1, sent_1 = cosine_similarity_and_sentiment(interface1)
+        similiarity2, sent_s2, sent_2 = cosine_similarity_and_sentiment(interface2)
 
         mean1 = calculate_mean(thr_length1)
         mean2 = calculate_mean(thr_length2)
@@ -231,7 +244,9 @@ def main():
         time_means1.append(mean3)
         time_means2.append(mean4)
         sim_lst1.append(similiarity1)
-        sim_lst2.append(similiarity2 )
+        sim_lst2.append(similiarity2)
+        compound_lst1.append(sent_s1[0])
+        compound_lst2.append(sent_s1[0])
 
     turns_lst1 = []
     turns_lst2 = []
@@ -247,12 +262,13 @@ def main():
 
     q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
     q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
-    q3 = structure_data(sim_lst1, sim_lst2, thr_means1, thr_means2)
-
+    q3 = structure_data(sim_lst1, thr_means1, sim_lst2, thr_means2)
 
     scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
     scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
     scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
+    scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
+    bar_plot(compound1, compound_lst2)
 
 if __name__ == '__main__':
     main()
