@@ -152,25 +152,12 @@ def main():
         thr_means1.append(mean1)
         thr_means2.append(mean2)
 
-    #total_turns = sum([pair[0] for pair in conversations])
     turns_lst1 = []
     turns_lst2 = []
-    conv_means1 = []
-    conv_means2 = []
 
     for i1, i2 in conversations:
-
         turns_lst1.append(sum(i1))
         turns_lst2.append(sum(i2))
-        #conv_mean1 = calculate_mean(turns_lst1)
-        #conv_mean2 = calculate_mean(turns_lst2)
-        print("Interface 1:")
-        print(calculate_mean(turns_lst1))
-        print("Interface 2:")
-        print(calculate_mean(turns_lst2))
-
-        #conv_means1.append(conv_mean1)
-        #conv_means2.append(conv_mean2)
 
 
     means_lst = []    
