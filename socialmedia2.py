@@ -14,8 +14,6 @@ from collections import Counter
 import re
 
 
-
-
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
@@ -33,8 +31,8 @@ def get_thread_lengths(lst):
 
 
 def calculate_mean(lst):
-    #return np.log(sum(lst))/np.log(len(lst))
-    return sum(lst)/len(lst)
+    return np.log(sum(lst)/len(lst))
+    #return sum(lst)/len(lst)
 
 
 def check_time(time, counter):
@@ -47,19 +45,20 @@ def check_time(time, counter):
     return counter
 
 
-def scatter_plot(means):
+def scatter_plot(means, xlabel, ylabel):
     """Sequential coherence"""
     interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*means)
     plt.scatter(interface1_thread, interface1_conv, color='r')
     plt.scatter(interface2_thread, interface2_conv, color='g')
-    plt.xlabel('Mean thread length')
-    plt.ylabel('Mean conversation length')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     z1 = np.polyfit(interface1_thread, interface1_conv, 1)
     p1 = np.poly1d(z1)
     z2 = np.polyfit(interface2_thread, interface2_conv, 1)
     p2 = np.poly1d(z2)
-    plb.plot(interface1_thread, p1(interface1_thread), 'm-')
-    plb.plot(interface2_thread, p2(interface2_thread), 'm-')
+    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='g', label='Single interface 1')
+    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='r', label='Double interface 2')
+    plt.legend()
     plt.show()
 
 
@@ -77,85 +76,36 @@ def interface_splitter(matrix):
     return interface_matrix1, interface_matrix2
 
 
-def thread_length(matrix):
+def thread_length_time(matrix):
     thread_length_counter = []
+    time_length_counter = []
     turn_counter = 0
+    time_counter = 0
     prev_o = None
     prev_s = None
-    for s, o in zip(matrix[0], matrix[1]):
-
-        if s and prev_o:
+    for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
+        if s and prev_o or o and prev_s:
             turn_counter += 1
-        if o and prev_s:
-            turn_counter += 1
+            time_counter += t.astype(np.float)
         if o == '/' or s == '/':
             thread_length_counter.append(turn_counter)
+            time_length_counter.append(time_counter)
             turn_counter = 0
+            time_counter = 0
         prev_o = o
         prev_s = s
-    return thread_length_counter
-
-#def conversation_length(matrix):
+    return thread_length_counter, time_length_counter
 
 
-
-
-
-def retrieve_means(matrices):
-    """Retrieves the mean thread length and mean conversation length
-    per conversation and per interfaces. It returns a list with tuples.
-    Every tuple is structured as following:
-    (mean tread length interface 1, mean conversation length interface1,
-    mean tread length interface 2, mean conversation length interface2)"""
-    thread_lst1 = []
-    thread_lst2 = []
-    conversations_lst1 = []
-    conversations_lst2 = []
-    for m in matrices:
-        c1 = c2 = c3 = 0
-        conv1 = ""
-        conv2 = ""
-        check = False
-        sec_m = np.flip(m)  # This is needed in order to determine the range of the double interpreter.
-        for i in range(len(sec_m)):
-            if sec_m[i][0] != "_" and check is False:
-                c1 += 1
-            else:
-                check = True
-
-        for i in range(len(m[:-c1])):
-            conv1 += m[i][0]
-            c2 = check_time(m[i][2], c2)
-        conversations_lst1.append(c2)
-
-        for i in range(c1):
-            conv2 += sec_m[i][3]
-            c3 = check_time(sec_m[i][1], c3)
-        conversations_lst2.append(c3)
-
-        threads1 = re.split('/[sd]', conv1)
-        threads2 = re.split('/[sd]', conv2)
-
-        thread_lst1.append(threads1)
-        thread_lst2.append(threads2)
-
-    thr_all1 = get_thread_lengths(thread_lst1)
-    thr_all2 = get_thread_lengths(thread_lst1)
-
-    thr_means1 = calculate_means(thr_all1)
-    thr_means2 = calculate_means(thr_all2)
-
-    conv_means1 = calculate_means(conversations_lst1)
-    conv_means2 = calculate_means(conversations_lst2)
-
-    means_lst = []
-    l1 = iter(thr_means1)
-    l2 = iter(conv_means1)
-    l3 = iter(thr_means2)
-    l4 = iter(conv_means2)
-    for i in range(len(thr_means1)):
-        means_lst.append((next(l1), next(l2), next(l3), next(l4)))
-    return means_lst
+def structure_data(list1, list2, list3, list4):
+    structure_lst = []    
+    l1 = iter(list1)
+    l2 = iter(list2)
+    l3 = iter(list3)
+    l4 = iter(list4)
+    for i in range(len(list1)):
+        structure_lst.append((next(l1), next(l2), next(l3), next(l4)))
+    return structure_lst
 
 
 def main():
@@ -199,49 +149,41 @@ def main():
     conversations = []
     thr_means1 = []
     thr_means2 = []
+    time_means1 = []
+    time_means2 = []
+
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
-        thr_length1 = thread_length(interface1)
-        thr_length2 = thread_length(interface2)
+        thr_length1, time_length1 = thread_length_time(interface1)
+        thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
-        print("Interface 1:")
-        print(calculate_mean(thr_length1))
         mean1 = calculate_mean(thr_length1)
-        print("Interface 2:")
-        print(calculate_mean(thr_length2))
         mean2 = calculate_mean(thr_length2)
+
+        mean3 = calculate_mean(time_length1)
+        mean4 = calculate_mean(time_length2)
+
+
         thr_means1.append(mean1)
         thr_means2.append(mean2)
+        time_means1.append(mean3)
+        time_means2.append(mean4)
 
-    #total_turns = sum([pair[0] for pair in conversations])
     turns_lst1 = []
     turns_lst2 = []
-    conv_means1 = []
-    conv_means2 = []
+
 
     for i1, i2 in conversations:
-
         turns_lst1.append(sum(i1))
         turns_lst2.append(sum(i2))
-        conv_mean1 = calculate_mean(turns_lst1)
-        conv_mean2 = calculate_mean(turns_lst2)
-        print(calculate_mean(turns_lst1))
-        print(calculate_mean(turns_lst2))
-
-        conv_means1.append(conv_mean1)
-        conv_means2.append(conv_mean2)
 
 
-    means_lst = []    
-    l1 = iter(thr_means1)
-    l2 = iter(conv_means1)
-    l3 = iter(thr_means2)
-    l4 = iter(conv_means2)
-    for i in range(len(thr_means1)):
-        means_lst.append((next(l1), next(l2), next(l3), next(l4)))
+    q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
+    q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
 
-    print(means_lst)
-    scatter_plot(means_lst)
+
+    scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
+    scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
 
 
 if __name__ == '__main__':
