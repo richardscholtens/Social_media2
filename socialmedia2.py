@@ -33,8 +33,8 @@ def get_thread_lengths(lst):
 
 
 def calculate_mean(lst):
-    #return np.log(sum(lst))/np.log(len(lst))
-    return sum(lst)/len(lst)
+    return np.log(sum(lst)/len(lst))
+    #return sum(lst)/len(lst)
 
 
 def check_time(time, counter):
@@ -95,67 +95,6 @@ def thread_length(matrix):
         prev_s = s
     return thread_length_counter
 
-#def conversation_length(matrix):
-
-
-
-
-
-def retrieve_means(matrices):
-    """Retrieves the mean thread length and mean conversation length
-    per conversation and per interfaces. It returns a list with tuples.
-    Every tuple is structured as following:
-    (mean tread length interface 1, mean conversation length interface1,
-    mean tread length interface 2, mean conversation length interface2)"""
-    thread_lst1 = []
-    thread_lst2 = []
-    conversations_lst1 = []
-    conversations_lst2 = []
-    for m in matrices:
-        c1 = c2 = c3 = 0
-        conv1 = ""
-        conv2 = ""
-        check = False
-        sec_m = np.flip(m)  # This is needed in order to determine the range of the double interpreter.
-        for i in range(len(sec_m)):
-            if sec_m[i][0] != "_" and check is False:
-                c1 += 1
-            else:
-                check = True
-
-        for i in range(len(m[:-c1])):
-            conv1 += m[i][0]
-            c2 = check_time(m[i][2], c2)
-        conversations_lst1.append(c2)
-
-        for i in range(c1):
-            conv2 += sec_m[i][3]
-            c3 = check_time(sec_m[i][1], c3)
-        conversations_lst2.append(c3)
-
-        threads1 = re.split('/[sd]', conv1)
-        threads2 = re.split('/[sd]', conv2)
-
-        thread_lst1.append(threads1)
-        thread_lst2.append(threads2)
-
-    thr_all1 = get_thread_lengths(thread_lst1)
-    thr_all2 = get_thread_lengths(thread_lst1)
-
-    thr_means1 = calculate_means(thr_all1)
-    thr_means2 = calculate_means(thr_all2)
-
-    conv_means1 = calculate_means(conversations_lst1)
-    conv_means2 = calculate_means(conversations_lst2)
-
-    means_lst = []
-    l1 = iter(thr_means1)
-    l2 = iter(conv_means1)
-    l3 = iter(thr_means2)
-    l4 = iter(conv_means2)
-    for i in range(len(thr_means1)):
-        means_lst.append((next(l1), next(l2), next(l3), next(l4)))
-    return means_lst
 
 
 def main():
@@ -225,7 +164,9 @@ def main():
         turns_lst2.append(sum(i2))
         conv_mean1 = calculate_mean(turns_lst1)
         conv_mean2 = calculate_mean(turns_lst2)
+        print("Interface 1:")
         print(calculate_mean(turns_lst1))
+        print("Interface 2:")
         print(calculate_mean(turns_lst2))
 
         conv_means1.append(conv_mean1)
@@ -240,7 +181,6 @@ def main():
     for i in range(len(thr_means1)):
         means_lst.append((next(l1), next(l2), next(l3), next(l4)))
 
-    print(means_lst)
     scatter_plot(means_lst)
 
 
