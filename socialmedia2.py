@@ -76,7 +76,8 @@ def bar_plot(bars1, bars2, ylabel1, xlabels, title):
     # The x position of bars
     r1 = np.arange(len(bars1))
     r2 = [x + barWidth for x in r1]
-     
+
+
     # Create blue bars
     plt.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', capsize=7, label='Interface 1')
      
@@ -84,7 +85,7 @@ def bar_plot(bars1, bars2, ylabel1, xlabels, title):
     plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='Interface 2')
      
     # general layout
-    plt.xticks([r + barWidth for r in range(len(bars1))], ['Compound', 'Positive', 'Neutral', 'Negative'])
+    plt.xticks([r + barWidth for r in range(len(bars1))], xlabels)
     plt.ylabel('height')
     plt.legend()
     plt.title(title)
@@ -158,10 +159,10 @@ def cosine_similarity_and_sentiment(matrix):
     compound2, pos2, neu2, neg2 = sentimentfinder(o_conv)
 
     all_tup = (all_comp, all_pos, all_neu, all_neg)
-    s_tup = (compound1, pos1, neu1, neg1)
-    o_tup = (compound2, pos2, neu2, neg2)
+    tup = (compound1, pos1, neu1, neg1, compound2, pos2, neu2, neg2)
 
-    return lst[0][1], all_tup, s_tup, o_tup
+
+    return lst[0][1], all_tup, tup
 
 
 def sentimentfinder(string):
@@ -221,14 +222,15 @@ def main():
     sim_lst2 = []
     sent_lst1 = []
     sent_lst2 = []
-
+    sent_lst3 = []
+    sent_lst4 = []
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
-        similiarity1, all_sent1 sent_s1, sent_o1 = cosine_similarity_and_sentiment(interface1)
-        similiarity2, all_sent2, sent_s2, sent_o2 = cosine_similarity_and_sentiment(interface2)
+        similiarity1, all_sent1, sent_so1 = cosine_similarity_and_sentiment(interface1)
+        similiarity2, all_sent2, sent_so2 = cosine_similarity_and_sentiment(interface2)
 
         mean1 = calculate_log_mean(thr_length1)
         mean2 = calculate_log_mean(thr_length2)
@@ -241,26 +243,51 @@ def main():
         time_means2.append(mean4)
         sim_lst1.append(similiarity1)
         sim_lst2.append(similiarity2)
-        sent_lst1.append(sent_s1)
-        sent_lst2.append(sent_s2)
-
+        sent_lst1.append(sent_so1)
+        sent_lst2.append(sent_so2)
+        sent_lst3.append(all_sent1)
+        sent_lst4.append(all_sent2)
     turns_lst1 = []
     turns_lst2 = []
 
-    compound1, pos1, neu1, neg1 = zip(*sent_lst1)
-    compound2, pos2, neu2, neg2 = zip(*sent_lst2)
+    compound1s, pos1s, neu1s, neg1s, compound1o, pos1o, neu1o, neg1o = zip(*sent_lst1)
+    compound2s, pos2s, neu2s, neg2s, compound2o, pos2o, neu2o, neg2o = zip(*sent_lst2)
+    compound3, pos3, neu3, neg3 = zip(*sent_lst3)
+    compound4, pos4, neu4, neg4 = zip(*sent_lst4)
 
-    compound_means1 = calculate_mean(compound1)
-    pos_means1 = calculate_mean(pos1)
-    neu_means1 = calculate_mean(neu1)
-    neg_means1 = calculate_mean(neg1)
-    q4_interface1 = (compound_means1, pos_means1, neu_means1, neg_means1)
+    compound_mean1s = calculate_mean(compound1s)
+    pos_means1s = calculate_mean(pos1s)
+    neu_means1s = calculate_mean(neu1s)
+    neg_means1s = calculate_mean(neg1s)
+    compound_means1o = calculate_mean(compound1o)
+    pos_means1o = calculate_mean(pos1o)
+    neu_means1o = calculate_mean(neu1o)
+    neg_means1o = calculate_mean(neg1o)
 
-    compound_means2 = calculate_mean(compound2)
-    pos_means2 = calculate_mean(pos2)
-    neu_means2 = calculate_mean(neu2)
-    neg_means2 = calculate_mean(neg2)
-    q4_interface2 = (compound_means2, pos_means2, neu_means2, neg_means2)
+    q4_interface1 = (compound_mean1s, pos_means1s, neu_means1s, neg_means1s, compound_means1o, pos_means1o, neu_means1o, neg_means1o)
+
+    compound_mean2s = calculate_mean(compound1s)
+    pos_means2s = calculate_mean(pos2s)
+    neu_means2s = calculate_mean(neu2s)
+    neg_means2s = calculate_mean(neg2s)
+    compound_means2o = calculate_mean(compound2o)
+    pos_means2o = calculate_mean(pos2o)
+    neu_means2o = calculate_mean(neu2o)
+    neg_means2o = calculate_mean(neg2o)
+
+    q4_interface2 = (compound_mean2s, pos_means2s, neu_means2s, neg_means2s, compound_means2o, pos_means2o, neu_means2o, neg_means2o)
+
+    compound_means3 = calculate_mean(compound3)
+    pos_means3 = calculate_mean(pos3)
+    neu_means3 = calculate_mean(neu3)
+    neg_means3 = calculate_mean(neg3)
+    q5_interface1 = (compound_means3, pos_means3, neu_means3, neg_means3)
+
+    compound_means4 = calculate_mean(compound4)
+    pos_means4 = calculate_mean(pos4)
+    neu_means4 = calculate_mean(neu4)
+    neg_means4 = calculate_mean(neg4)
+    q5_interface2 = (compound_means4, pos_means4, neu_means4, neg_means4)
 
 
     for i1, i2 in conversations:
@@ -279,8 +306,10 @@ def main():
     scatter_plot(q1, 'Mean thread length (log)', 'Conversation length', 'Sequence coherence')
     scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)', 'Thread length vs Time')
     scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)', 'Cosine similiarity vs Thread length')
-
-    bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "The happier interface.")
+    bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
+                                                    'Negative_self', 'Compound_other', 'Positive_other',
+                                                    'Neutral_other', 'Negative_other'], "Happier interface.")
+    bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
 
 if __name__ == '__main__':
     main()
