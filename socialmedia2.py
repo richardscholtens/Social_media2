@@ -56,8 +56,9 @@ def scatter_plot(means, xlabel, ylabel):
     p1 = np.poly1d(z1)
     z2 = np.polyfit(interface2_thread, interface2_conv, 1)
     p2 = np.poly1d(z2)
-    plb.plot(interface1_thread, p1(interface1_thread), 'm-')
-    plb.plot(interface2_thread, p2(interface2_thread), 'm-')
+    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='g', label='Single interface 1')
+    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='r', label='Double interface 2')
+    plt.legend()
     plt.show()
 
 
