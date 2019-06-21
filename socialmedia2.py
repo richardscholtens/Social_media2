@@ -47,13 +47,13 @@ def check_time(time, counter):
     return counter
 
 
-def scatter_plot(means):
+def scatter_plot(means, xlabel, ylabel):
     """Sequential coherence"""
     interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*means)
     plt.scatter(interface1_thread, interface1_conv, color='r')
     plt.scatter(interface2_thread, interface2_conv, color='g')
-    plt.xlabel('Mean thread length')
-    plt.ylabel('Mean conversation length')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     z1 = np.polyfit(interface1_thread, interface1_conv, 1)
     p1 = np.poly1d(z1)
     z2 = np.polyfit(interface2_thread, interface2_conv, 1)
@@ -162,26 +162,26 @@ def main():
 
         turns_lst1.append(sum(i1))
         turns_lst2.append(sum(i2))
-        conv_mean1 = calculate_mean(turns_lst1)
-        conv_mean2 = calculate_mean(turns_lst2)
+        #conv_mean1 = calculate_mean(turns_lst1)
+        #conv_mean2 = calculate_mean(turns_lst2)
         print("Interface 1:")
         print(calculate_mean(turns_lst1))
         print("Interface 2:")
         print(calculate_mean(turns_lst2))
 
-        conv_means1.append(conv_mean1)
-        conv_means2.append(conv_mean2)
+        #conv_means1.append(conv_mean1)
+        #conv_means2.append(conv_mean2)
 
 
     means_lst = []    
     l1 = iter(thr_means1)
-    l2 = iter(conv_means1)
+    l2 = iter(turns_lst1)
     l3 = iter(thr_means2)
-    l4 = iter(conv_means2)
+    l4 = iter(turns_lst2)
     for i in range(len(thr_means1)):
         means_lst.append((next(l1), next(l2), next(l3), next(l4)))
 
-    scatter_plot(means_lst)
+    scatter_plot(means_lst, 'Mean thread length (log)', 'Conversation length')
 
 
 if __name__ == '__main__':
