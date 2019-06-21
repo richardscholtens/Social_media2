@@ -67,7 +67,7 @@ def scatter_plot(info, xlabel, ylabel):
 def bar_plot(bars1, bars2, xlabel, ylabel):
     # width of the bars
     barWidth = 0.3
-     
+
 
 
     print(bars1)
@@ -75,54 +75,93 @@ def bar_plot(bars1, bars2, xlabel, ylabel):
     bars1 = [10, 9, 2]
     # Choose the height of the cyan bars
     bars2 = [10.8, 9.5, 4.5]
-     
+
 
     # The x position of bars
     r1 = np.arange(len(bars1))
     r2 = [x + barWidth for x in r1]
-     
+
     # Create blue bars
     plt.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', capsize=7, label='poacee')
-     
+
     # Create cyan bars
     plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='sorgho')
-     
+
     # general layout
     plt.xticks([r + barWidth for r in range(len(bars1))], ['cond_A', 'cond_B', 'cond_C'])
     plt.ylabel('height')
     plt.legend()
-     
+
     # Show graphic
     plt.show()
 
 
+def underscore_index(w_list):
+    for i in range(len(w_list)):
+        if w_list[i] == '_':
+            return i
+
 
 def interface_splitter(matrix):
-    reversed = np.flip(matrix[3])
-    for i in range(len(reversed)):
-        if reversed[i] == '_':
-            index = i
+    """ Splits the matrix for each interface. This is done by looking at the
+        file that ends with _w_.txt, or the 4th column in our matrix. It checks
+        for a sequence of 20 dashes, then it is the single line interface, or
+        for underscores, which means the double line interface was used. This
+        is to check with which interface the conversation started.
+        Then it goes through the list of dashes and underscores again to
+        determine the index where to split. If it started with the double line
+        interface, we go through the reversed list until an underscore is
+        found, which is where to split. If it started with the single line
+        interface, we go through the normal list.
+        We split each of the arrays in the matrix, append them to a new matrix
+        and return that one."""
+    interface_chars = matrix[3]
+    underscore_counter = 0
+    dash_counter = 0
+    index_single_to_double = None
+    index_double_to_single = None
+    for i in range(len(interface_chars)):
+        if interface_chars[i] == '_':
+            underscore_counter += 1
+        if interface_chars[i] == '-':
+            dash_counter += 1
+        if dash_counter == 20 and underscore_counter == 0:
             break
-    interface_matrix1 = []
-    interface_matrix2 = []
-    for i in range(len(matrix)):
-        interface_matrix1.append(matrix[i][:-index])
-        interface_matrix2.append(matrix[i][index:])
-    return interface_matrix1, interface_matrix2
+        if underscore_counter == 20:
+            break
+    if underscore_counter == 20:
+        reversed_chars = np.flip(interface_chars)
+        index_double_to_single = underscore_index(reversed_chars)
+    if dash_counter == 20:
+        index_single_to_double = underscore_index(interface_chars)
+    interface_matrix_single = []
+    interface_matrix_double = []
+    if index_single_to_double:
+        for i in range(len(matrix)):
+            interface_matrix_single.append(matrix[i][:index_single_to_double])
+            interface_matrix_double.append(matrix[i][index_single_to_double:])
+    if index_double_to_single:
+        for i in range(len(matrix)):
+            interface_matrix_double.append(matrix[i][:index_double_to_single])
+            interface_matrix_single.append(matrix[i][index_double_to_single:])
+    return interface_matrix_single, interface_matrix_double
 
 
 def thread_length_time(matrix):
+    """ Counts the number of turns in each thread, and time each thread takes.
+        It goes through the s and o file and """
     thread_length_counter = []
     time_length_counter = []
     turn_counter = 0
     time_counter = 0
     prev_o = None
     prev_s = None
+    sd = ['s', 'd']
     for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
         if s and prev_o or o and prev_s:
             turn_counter += 1
             time_counter += t.astype(np.float)
-        if o == '/' or s == '/':
+        if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
             thread_length_counter.append(turn_counter)
             time_length_counter.append(time_counter)
             turn_counter = 0
@@ -131,9 +170,13 @@ def thread_length_time(matrix):
         prev_s = s
     return thread_length_counter, time_length_counter
 
+#
+# def thread_splitter(matrix):
+#     for s, o, t,
+
 
 def structure_data(list1, list2, list3, list4):
-    structure_lst = []    
+    structure_lst = []
     l1 = iter(list1)
     l2 = iter(list2)
     l3 = iter(list3)
@@ -143,7 +186,7 @@ def structure_data(list1, list2, list3, list4):
     return structure_lst
 
 
-def cosine_similarity_and_sentiment(matrix):
+def get_text(matrix):
     s_conv = ""
     o_conv = ""
     for s, o in zip(matrix[0], matrix[1]):
@@ -155,6 +198,11 @@ def cosine_similarity_and_sentiment(matrix):
         o_conv += o
     s_conv = s_conv.lower()
     o_conv = o_conv.lower()
+    return s_conv, o_conv
+
+
+def cosine_similarity_and_sentiment(matrix):
+    s_conv, o_conv = get_text(matrix)
     vect = TfidfVectorizer(min_df=1)
     tfidf = vect.fit_transform([s_conv, o_conv])
     lst = (tfidf * tfidf.T).A
@@ -202,9 +250,8 @@ def main():
             e2 = np.array(f2.split('¦'))
             e3 = np.array(f3.split('¦'))
             e4 = np.array(f4.split('¦'))
-            print(len(e1), len(e2), len(e3[2:]), len(e4))
-
-            #m = np.column_stack((e1, e2, e3[2:], e4))
+            # print(len(e1), len(e2), len(e3[2:]), len(e4))
+            m = np.column_stack((e1, e2, e3[2:], e4))
             #matrix_lst.append(m)
             matrix_lst2.append((e1, e2, e3[2:], e4))
             # for i in range(len(m)):
@@ -227,6 +274,7 @@ def main():
 
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
+        # print("Len i:", len(i[0]), " len interface1: ", len(interface1[0]), " len interface2: ", len(interface2[0]), " len sum: ", (len(interface1[0]) + len(interface2[0])))
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
@@ -264,11 +312,11 @@ def main():
     q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
     q3 = structure_data(sim_lst1, thr_means1, sim_lst2, thr_means2)
 
-    scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
-    scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
-    scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
-    scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
-    bar_plot(compound1, compound_lst2)
+    # scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
+    # scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
+    # scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
+    # scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
+    # bar_plot(compound1, compound_lst2)
 
 if __name__ == '__main__':
     main()
