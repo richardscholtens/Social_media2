@@ -1,58 +1,41 @@
 #!/usr/bin/python3
-# student: J.F.P. (Richard) Scholtens
-# studentnr.: s2956586
-# datum: 231/05/2019
+# student: J.F.P. (Richard) Scholtens & R.P. (Rolf) Daling
+# studentnr.: s2956586 & s2344343
+# datum: 21/06/2019
 
 
-from contextlib import ExitStack
 import numpy as np
 import glob
-
 from matplotlib import pyplot as plt
 import matplotlib.pylab as plb
-from collections import Counter
-import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import time
-
-
-def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
-
-
-def get_thread_lengths(lst):
-    all_length = []
-    length = 0
-    for i in lst:
-        for ii in i:
-            length += len(ii)
-        all_length.append(length)
-    return all_length
 
 
 def calculate_log_mean(lst):
+    """ Helper function to calculate the logarithmic mean. """
     return np.log(sum(lst)/len(lst))
 
 
 def calculate_mean(lst):
+    """ Helper function to calculate the mean. """
     return sum(lst)/len(lst)
 
 
-def check_time(time, counter):
-    try:
-        time = time.astype(np.float)
-        if time >= 100:
-            counter += 1
-    except ValueError:
-        pass
-    return counter
+def structure_data(list1, list2, list3, list4):
+    """ Helper function to structure the data. """
+    structure_lst = []
+    l1 = iter(list1)
+    l2 = iter(list2)
+    l3 = iter(list3)
+    l4 = iter(list4)
+    for i in range(len(list1)):
+        structure_lst.append((next(l1), next(l2), next(l3), next(l4)))
+    return structure_lst
 
 
 def scatter_plot(info, xlabel, ylabel, title):
-    """Sequential coherence"""
+    """ Plots a scatter plot"""
     interface1_thread, interface1_conv, interface2_thread, interface2_conv = zip(*info)
     plt.scatter(interface1_thread, interface1_conv, color='r')
     plt.scatter(interface2_thread, interface2_conv, color='g')
@@ -62,15 +45,15 @@ def scatter_plot(info, xlabel, ylabel, title):
     p1 = np.poly1d(z1)
     z2 = np.polyfit(interface2_thread, interface2_conv, 1)
     p2 = np.poly1d(z2)
-    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='r', label='Single interface 1')
-    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='g', label='Double interface 2')
+    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='r', label='Single line interface')
+    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='g', label='Double line interface')
     plt.title(title)
     plt.legend()
     plt.show()
 
 
 def bar_plot(bars1, bars2, ylabel1, xlabels, title):
-
+    """ Plots a bar graph with 2 bars. """
     # width of the bars
     barWidth = 0.3
 
@@ -78,16 +61,15 @@ def bar_plot(bars1, bars2, ylabel1, xlabels, title):
     r1 = np.arange(len(bars1))
     r2 = [x + barWidth for x in r1]
 
-
     # Create blue bars
-    plt.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', capsize=7, label='Interface 1')
+    plt.bar(r1, bars1, width = barWidth, color = 'blue', edgecolor = 'black', capsize=7, label='Single line interface')
 
     # Create cyan bars
-    plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='Interface 2')
+    plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='Double line interface')
 
     # general layout
     plt.xticks([r + barWidth for r in range(len(bars1))], xlabels, rotation='vertical')
-    plt.ylabel('height')
+    plt.ylabel(ylabel1)
     plt.legend()
     plt.title(title)
     plt.subplots_adjust(bottom=0.3)
@@ -206,17 +188,6 @@ def thread_splitter(matrix):
     return thread_matrix
 
 
-def structure_data(list1, list2, list3, list4):
-    structure_lst = []
-    l1 = iter(list1)
-    l2 = iter(list2)
-    l3 = iter(list3)
-    l4 = iter(list4)
-    for i in range(len(list1)):
-        structure_lst.append((next(l1), next(l2), next(l3), next(l4)))
-    return structure_lst
-
-
 def get_text(matrix):
     """ Takes the s and o lists of the matrix and returns the string of each
         both parts of the conversation. """
@@ -225,9 +196,9 @@ def get_text(matrix):
     prev_s = None
     prev_o = None
     for s, o in zip(matrix[0], matrix[1]):
-        if not s and prev_s:
+        if not s and prev_s and prev_s != " ":
             s = " "
-        if not o and prev_o:
+        if not o and prev_o and prev_o != " ":
             o = " "
         s_conv += s
         o_conv += o
@@ -239,6 +210,9 @@ def get_text(matrix):
 
 
 def cosine_similarity_and_sentiment(matrix):
+    """ Finds the cosine similiarity of both parties of the conversation using
+        the TfidfVectorizer from sklearn. Also finds the sentiment for the
+        conversation as a whole, and for both parties separately. """
     s_conv, o_conv = get_text(matrix)
     vect = TfidfVectorizer(min_df=1)
     tfidf = vect.fit_transform([s_conv, o_conv])
@@ -247,66 +221,41 @@ def cosine_similarity_and_sentiment(matrix):
     compound1, pos1, neu1, neg1 = sentimentfinder(s_conv)
     compound2, pos2, neu2, neg2 = sentimentfinder(o_conv)
 
-    all_tup = (all_comp, all_pos, all_neu, all_neg)
-    tup = (compound1, pos1, neu1, neg1, compound2, pos2, neu2, neg2)
+    sent_all = (all_comp, all_pos, all_neu, all_neg)
+    sent_per_conv = (compound1, pos1, neu1, neg1, compound2, pos2, neu2, neg2)
 
-
-    return lst[0][1], all_tup, tup
-
+    return lst[0][1], sent_all, sent_per_conv
 
 
 def sentimentfinder(string):
+    """ Finds the sentiment using the SentimentIntensityAnalyzer from NLTK. """
     sid = SentimentIntensityAnalyzer()
     scores = sid.polarity_scores(string)
     return scores['compound'], scores['pos'], scores['neu'], scores['neg']
 
 
-def sentiment_threads(matrix, ):
+def sentiment_threads(matrix):
+    """ Splits the text into threads, gets the text for each thread of both
+        parties, finds the sentiment for each thread and counts how often the
+        positive value is higher than the negative value.
+        Returns the number of times it was positive, and the number of threads.
+        """
+    thread_matrix = thread_splitter(matrix)
+    s_conv = ""
+    o_conv = ""
+    pos_counter = 0
+    for thread in thread_matrix:
+        s_conv, o_conv = get_text(thread)
+        conv = s_conv + " " + o_conv
+        comp, pos, neu, neg = sentimentfinder(conv)
+        if pos > neg:
+            pos_counter += 1
+    return (pos_counter, len(thread_matrix))
 
 
-    conv = ""
-    for i in range(len(matrix[0])):
-        prev_s = matrix[0][i]
-        prev_o = matrix[1][i]
-
-        # if not matrix[0][i] and prev_s:
-        #     print("1")
-        #     conv = conv +  " " + matrix[1][i]
-
-
-        if not matrix[0][i] and prev_o:
-
-            print("2")
-            conv = conv +  matrix[1][i]
-
-
-        # if not matrix[1][i] and prev_o:
-
-        #     print("3")
-        #     conv = conv +  " " + matrix[0][i]
-
-        if not matrix[1][i] and prev_s:
-
-            print("4")
-            conv = conv +  matrix[0][i]
-
-
-        print(conv)
-        threads = re.split('/[sd]', conv)
-        sent_lst = []
-        pos_counter = 0
-        for t in threads:
-            comp, pos, neu, neg = sentimentfinder(t)
-
-            if pos > neg:
-                pos_counter += 1
-        #print(pos_counter, len(threads))
-        return (pos_counter, len(threads))
-
-
-def main():
-    matrix_lst = []
-    matrix_lst2 = []
+def get_filenames():
+    """ Gets the filenames using glob, and returns a list for each type of
+        file. """
     t_list = []
     s_list = []
     w_list = []
@@ -320,9 +269,15 @@ def main():
             w_list.append(filename)
         else:
             o_list.append(filename)
+    return s_list, o_list, t_list, w_list
+
+
+def open_files(s_list, o_list, t_list, w_list):
+    """ Opens the files from each list and splits them on the split characters.
+        Returns the list of tuples with each of the 4 lists."""
+    matrix_lst = []
     for o, s, t, w in zip(o_list, s_list, t_list, w_list):
         with open(o, 'r') as f1, open(s, 'r') as f2, open(t, 'r') as f3, open(w, 'r') as f4:
-            print(o)
             f1 = f1.read()
             f2 = f2.read()
             f3 = f3.read()
@@ -331,17 +286,13 @@ def main():
             e2 = np.array(f2.split('¦'))
             e3 = np.array(f3.split('¦'))
             e4 = np.array(f4.split('¦'))
-            # print(len(e1), len(e2), len(e3[2:]), len(e4))
-            m = np.column_stack((e1, e2, e3[2:], e4))
-            #matrix_lst.append(m)
-            matrix_lst2.append((e1, e2, e3[2:], e4))
-            # for i in range(len(m)):
-            #     print(m[i][0], m[i][1], m[i][2], m[i][3]) # , m[i][4], m[i][5], m[i][6], m[i][7])
+            matrix_lst.append((e1, e2, e3[2:], e4))
+    return matrix_lst
 
-    # means = retrieve_means(matrix_lst)
-            # for i in m:
-            #     print(i)
 
+def main():
+    s_list, o_list, t_list, w_list = get_filenames()
+    matrix_lst = open_files(s_list, o_list, t_list, w_list)
 
     conversations = []
     thr_means1 = []
@@ -354,15 +305,15 @@ def main():
     sent_lst2 = []
     sent_lst3 = []
     sent_lst4 = []
-    for i in matrix_lst2:
+    check_answers1 = []
+    check_answers2 = []
+    for i in matrix_lst:
         interface1, interface2 = interface_splitter(i)
-        # print("Len i:", len(i[0]), " len interface1: ", len(interface1[0]), " len interface2: ", len(interface2[0]), " len sum: ", (len(interface1[0]) + len(interface2[0])))
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
         similiarity1, all_sent1, sent_so1 = cosine_similarity_and_sentiment(interface1)
         similiarity2, all_sent2, sent_so2 = cosine_similarity_and_sentiment(interface2)
-
 
         mean1 = calculate_log_mean(thr_length1)
         mean2 = calculate_log_mean(thr_length2)
@@ -379,8 +330,8 @@ def main():
         sent_lst2.append(sent_so2)
         sent_lst3.append(all_sent1)
         sent_lst4.append(all_sent2)
-        # sent_tup1 = sentiment_threads(interface1)
-        # sent_tup2 = sentiment_threads(interface2)
+        check_answers1.append(sentiment_threads(interface1))
+        check_answers2.append(sentiment_threads(interface2))
     turns_lst1 = []
     turns_lst2 = []
 
@@ -388,7 +339,6 @@ def main():
     compound2s, pos2s, neu2s, neg2s, compound2o, pos2o, neu2o, neg2o = zip(*sent_lst2)
     compound3, pos3, neu3, neg3 = zip(*sent_lst3)
     compound4, pos4, neu4, neg4 = zip(*sent_lst4)
-
 
     compound_mean1s = calculate_mean(compound1s)
     pos_means1s = calculate_mean(pos1s)
@@ -399,7 +349,7 @@ def main():
     neu_means1o = calculate_mean(neu1o)
     neg_means1o = calculate_mean(neg1o)
 
-    q4_interface1 = (compound_mean1s, pos_means1s, neu_means1s, neg_means1s, compound_means1o, pos_means1o, neu_means1o, neg_means1o)
+    q4_interface1 = (compound_mean1s, compound_means1o, pos_means1s, pos_means1o, neu_means1s, neu_means1o, neg_means1s, neg_means1o)
 
     compound_mean2s = calculate_mean(compound1s)
     pos_means2s = calculate_mean(pos2s)
@@ -410,7 +360,7 @@ def main():
     neu_means2o = calculate_mean(neu2o)
     neg_means2o = calculate_mean(neg2o)
 
-    q4_interface2 = (compound_mean2s, pos_means2s, neu_means2s, neg_means2s, compound_means2o, pos_means2o, neu_means2o, neg_means2o)
+    q4_interface2 = (compound_mean2s, compound_means2o, pos_means2s, pos_means2o, neu_means2s, neu_means2o, neg_means2s, neg_means2o)
 
     compound_means3 = calculate_mean(compound3)
     pos_means3 = calculate_mean(pos3)
@@ -424,31 +374,32 @@ def main():
     neg_means4 = calculate_mean(neg4)
     q5_interface2 = (compound_means4, pos_means4, neu_means4, neg_means4)
 
-
-
-
-
     for i1, i2 in conversations:
-        turns_lst1.append(sum(i1))
-        turns_lst2.append(sum(i2))
+        turns_lst1.append(np.log(sum(i1)))
+        turns_lst2.append(np.log(sum(i2)))
 
-
-
-
-
-    q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
+    q1 = structure_data(turns_lst1, thr_means1, turns_lst2, thr_means2)
     q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
     q3 = structure_data(thr_means1, sim_lst1, thr_means2, sim_lst2)
 
+    ch_ans1 = []
+    ch_ans2 = []
 
-    # scatter_plot(q1, 'Mean thread length (log)', 'Conversation length', 'Sequence coherence')
-    # scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)', 'Thread length vs Time')
-    # scatter_plot(q3, 'Mean thread length (log)', 'Cosine similiarity', 'Cosine similiarity vs Thread length')
-    bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
-                                                    'Negative_self', 'Compound_other', 'Positive_other',
-                                                    'Neutral_other', 'Negative_other'], "Happier interface.")
-    bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
-    bar_plot(sent_tup1, sent_tup2, "Correct answers", ['Check', 'Total threads'], "Predicting correct answers.")
+    for i, j in zip(check_answers1, check_answers2):
+        ch_ans1.append(i[0]/i[1])
+        ch_ans2.append(j[0]/j[1])
+    ch_ans1 = calculate_mean(ch_ans1)
+    ch_ans2 = calculate_mean(ch_ans2)
+
+    scatter_plot(q1, 'Conversation length in turns (log)', 'Mean thread length in turns (log)', 'Sequence coherence')
+    scatter_plot(q2, 'Mean thread length in turns(log)', 'Mean length in seconds (log)', 'Thread length in turns vs time')
+    scatter_plot(q3, 'Mean thread length (log)', 'Cosine similiarity', 'Cosine similiarity vs Thread length')
+    bar_plot(q5_interface1, q5_interface2, "Sentiment mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Happier interface")
+    bar_plot(q4_interface1, q4_interface2, "Sentiment mean", ['Compound_self', 'Compound_other', 'Positive_self', 'Positive_other',
+                                                    'Neutral_self', 'Neutral_other', 'Negative_self',
+                                                    'Negative_other'], "Emotional Synchrony")
+    bar_plot([ch_ans1], [ch_ans2], "Mean correct answers over all conversations", "", "Predicting correct answers")
+
 
 if __name__ == '__main__':
     main()
