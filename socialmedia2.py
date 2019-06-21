@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 import matplotlib.pylab as plb
 from collections import Counter
 import re
+from nltk.corpus import stopwords 
+from nltk.tokenize import word_tokenize 
 
 
 def chunks(l, n):
@@ -108,6 +110,62 @@ def structure_data(list1, list2, list3, list4):
     return structure_lst
 
 
+def copy_language(matrix):
+#    s_conv = "".join(matrix[0])
+    print(len(matrix[0]))
+    # s_conv = np.array2string(matrix[0])
+    # s_conv = s_conv.lower()
+#    o_conv = "".join(matrix[1])
+
+    # o_conv = np.array2string(matrix[1])
+    # o_conv = o_conv.lower()
+
+
+    s_conv = ""
+    o_conv = ""
+
+
+    for s, o in zip(matrix[0], matrix[1]):
+        if not s:
+            s = " "
+        if not o:
+            o = " "
+        s_conv += s
+        o_conv += o
+
+    s_conv = s_conv.lower()
+    o_conv = o_conv.lower()
+
+    print(o_conv)
+    # tokenization 
+    X_list = word_tokenize(s_conv)  
+    Y_list = word_tokenize(o_conv) 
+      
+    # sw contains the list of stopwords 
+    sw = stopwords.words('english')  
+    l1 =[];l2 =[] 
+      
+    # remove stop words from string 
+    X_set = {w for w in X_list if not w in sw}  
+    Y_set = {w for w in Y_list if not w in sw} 
+      
+    # form a set containing keywords of both strings  
+    rvector = X_set.union(Y_set)  
+    for w in rvector: 
+        if w in X_set: l1.append(1) # create a vector 
+        else: l1.append(0) 
+        if w in Y_set: l2.append(1) 
+        else: l2.append(0) 
+    c = 0
+      
+    # cosine formula  
+    for i in range(len(rvector)): 
+            c+= l1[i]*l2[i] 
+    cosine = c / float((sum(l1)*sum(l2))**0.5) 
+    print("similarity: ", cosine)
+
+    return cosine
+
 def main():
     matrix_lst = []
     matrix_lst2 = []
@@ -134,9 +192,10 @@ def main():
             e2 = np.array(f2.split('¦'))
             e3 = np.array(f3.split('¦'))
             e4 = np.array(f4.split('¦'))
-            # print(len(e1), len(e2), len(e3[2:]), len(e4))
-            m = np.column_stack((e1, e2, e3[2:], e4))
-            matrix_lst.append(m)
+            print(len(e1), len(e2), len(e3[2:]), len(e4))
+
+            #m = np.column_stack((e1, e2, e3[2:], e4))
+            #matrix_lst.append(m)
             matrix_lst2.append((e1, e2, e3[2:], e4))
             # for i in range(len(m)):
             #     print(m[i][0], m[i][1], m[i][2], m[i][3]) # , m[i][4], m[i][5], m[i][6], m[i][7])
@@ -151,15 +210,18 @@ def main():
     thr_means2 = []
     time_means1 = []
     time_means2 = []
-
+    sim_lst1 = []
+    sim_lst2 = []
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
+        similiarity1 = copy_language(interface1)
+        similiarity2 = copy_language(interface2)
+
         mean1 = calculate_mean(thr_length1)
         mean2 = calculate_mean(thr_length2)
-
         mean3 = calculate_mean(time_length1)
         mean4 = calculate_mean(time_length2)
 
@@ -168,6 +230,8 @@ def main():
         thr_means2.append(mean2)
         time_means1.append(mean3)
         time_means2.append(mean4)
+        sim_lst1.append(similiarity1)
+        sim_lst2.append(similiarity2 )
 
     turns_lst1 = []
     turns_lst2 = []
@@ -178,13 +242,17 @@ def main():
         turns_lst2.append(sum(i2))
 
 
+
+
+
     q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
     q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
+    q3 = structure_data(sim_lst1, sim_lst2, thr_means1, thr_means2)
 
 
     scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
     scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
-
+    scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)')
 
 if __name__ == '__main__':
     main()
