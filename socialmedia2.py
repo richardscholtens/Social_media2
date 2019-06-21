@@ -14,8 +14,6 @@ from collections import Counter
 import re
 
 
-
-
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
@@ -77,24 +75,36 @@ def interface_splitter(matrix):
     return interface_matrix1, interface_matrix2
 
 
-def thread_length(matrix):
+def thread_length_time(matrix):
     thread_length_counter = []
+    time_length_counter = []
     turn_counter = 0
+    time_counter = 0
     prev_o = None
     prev_s = None
-    for s, o in zip(matrix[0], matrix[1]):
-
-        if s and prev_o:
+    for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
+        if s and prev_o or o and prev_s:
             turn_counter += 1
-        if o and prev_s:
-            turn_counter += 1
+            time_counter += t.astype(np.float)
         if o == '/' or s == '/':
             thread_length_counter.append(turn_counter)
+            time_length_counter.append(time_counter)
             turn_counter = 0
+            time_counter = 0
         prev_o = o
         prev_s = s
-    return thread_length_counter
+    return thread_length_counter, time_length_counter
 
+
+def structure_data(list1, list2, list3, list4):
+    structure_lst = []    
+    l1 = iter(list1)
+    l2 = iter(list2)
+    l3 = iter(list3)
+    l4 = iter(list4)
+    for i in range(len(list1)):
+        structure_lst.append((next(l1), next(l2), next(l3), next(l4)))
+    return structure_lst
 
 
 def main():
@@ -138,37 +148,41 @@ def main():
     conversations = []
     thr_means1 = []
     thr_means2 = []
+    time_means1 = []
+    time_means2 = []
+
     for i in matrix_lst2:
         interface1, interface2 = interface_splitter(i)
-        thr_length1 = thread_length(interface1)
-        thr_length2 = thread_length(interface2)
+        thr_length1, time_length1 = thread_length_time(interface1)
+        thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
-        print("Interface 1:")
-        print(calculate_mean(thr_length1))
         mean1 = calculate_mean(thr_length1)
-        print("Interface 2:")
-        print(calculate_mean(thr_length2))
         mean2 = calculate_mean(thr_length2)
+
+        mean3 = calculate_mean(time_length1)
+        mean4 = calculate_mean(time_length2)
+
+
         thr_means1.append(mean1)
         thr_means2.append(mean2)
+        time_means1.append(mean3)
+        time_means2.append(mean4)
 
     turns_lst1 = []
     turns_lst2 = []
+
 
     for i1, i2 in conversations:
         turns_lst1.append(sum(i1))
         turns_lst2.append(sum(i2))
 
 
-    means_lst = []    
-    l1 = iter(thr_means1)
-    l2 = iter(turns_lst1)
-    l3 = iter(thr_means2)
-    l4 = iter(turns_lst2)
-    for i in range(len(thr_means1)):
-        means_lst.append((next(l1), next(l2), next(l3), next(l4)))
+    q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
+    q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
 
-    scatter_plot(means_lst, 'Mean thread length (log)', 'Conversation length')
+
+    scatter_plot(q1, 'Mean thread length (log)', 'Conversation length')
+    scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)')
 
 
 if __name__ == '__main__':
