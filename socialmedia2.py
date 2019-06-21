@@ -14,6 +14,7 @@ from collections import Counter
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import time
 
 
 def chunks(l, n):
@@ -85,15 +86,17 @@ def bar_plot(bars1, bars2, ylabel1, xlabels, title):
     plt.bar(r2, bars2, width = barWidth, color = 'cyan', edgecolor = 'black', capsize=7, label='Interface 2')
 
     # general layout
-    plt.xticks([r + barWidth for r in range(len(bars1))], xlabels)
+    plt.xticks([r + barWidth for r in range(len(bars1))], xlabels, rotation='vertical')
     plt.ylabel('height')
     plt.legend()
     plt.title(title)
+    plt.subplots_adjust(bottom=0.3)
     # Show graphic
     plt.show()
 
 
 def underscore_index(w_list):
+    """ Returns the index of the first underscore that occurs in the list."""
     for i in range(len(w_list)):
         if w_list[i] == '_':
             return i
@@ -151,25 +154,77 @@ def thread_length_time(matrix):
     time_length_counter = []
     turn_counter = 0
     time_counter = 0
+
+    # prev_o = None
+    # prev_s = None
+    # sd = ['s', 'd']
+    # for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
+    #     if s and prev_o or o and prev_s:
+    #         turn_counter += 1
+    #         time_counter += t.astype(np.float)
+    #     if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
+    #         thread_length_counter.append(turn_counter)
+    #         time_length_counter.append(time_counter)
+    #         turn_counter = 0
+    #         time_counter = 0
+    #     prev_o = o
+    #     prev_s = s
+
     prev_o = None
     prev_s = None
-    sd = ['s', 'd']
-    for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
-        if s and prev_o or o and prev_s:
-            turn_counter += 1
-            time_counter += t.astype(np.float)
-        if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
-            thread_length_counter.append(turn_counter)
-            time_length_counter.append(time_counter)
-            turn_counter = 0
-            time_counter = 0
-        prev_o = o
-        prev_s = s
+    thread_splitted_matrix = thread_splitter(matrix)
+    # print(thread_splitted_matrix)
+    for thread in thread_splitted_matrix:
+        print(thread[0])
+        # print(len(thread[0]), len(thread[1]), len(thread[2]))
+        for s, o, t in zip(thread[0], thread[1], thread[2]):
+            # print(type(s), type(o), type(t))
+            # print(s, o, t)
+            if s and prev_o or o and prev_s:
+                turn_counter += 1
+                # time_counter += t.astype(np.float)
+            prev_o = o
+            prev_s = s
+        thread_length_counter.append(turn_counter)
+        time_length_counter.append(time_counter)
+        turn_counter = 0
+        time_counter = 0
+        # time.sleep(1)
     return thread_length_counter, time_length_counter
 
-#
-# def thread_splitter(matrix):
-#     for s, o, t,
+
+def thread_splitter(matrix):
+    """ Splits the conversation into single threads. Each thread is seperated
+        by a slash followed by either a 'd' or a 's'. So we look at the
+        previous and current character of both conversationists, and find the
+        index. Then we split every array of the matrix at this index and append
+        it to the list.
+        The result is a list of matrices for every thread. """
+    thread_matrix = []
+    thread = []
+    thread_start = 0
+    prev_s = None
+    prev_o = None
+    sd = ['s', 'd']
+    for i in range(len(matrix[0])):
+        s = matrix[0][i]
+        o = matrix[1][i]
+        if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
+            thread_end = i
+            # print(thread_start, thread_end)
+            # print(matrix[0][thread_start:thread_end])
+            for j in range(len(matrix)):
+                thread.append(matrix[j][thread_start:thread_end])
+            thread_matrix.append(thread)
+            thread_start = thread_end
+        prev_s = s
+        prev_o = o
+    # print(thread_start)
+    # print(len(matrix[0]))
+    for i in range(len(matrix)):
+        thread.append(matrix[i][thread_start:])
+    thread_matrix.append(thread)
+    return thread_matrix
 
 
 def structure_data(list1, list2, list3, list4):
@@ -184,15 +239,21 @@ def structure_data(list1, list2, list3, list4):
 
 
 def get_text(matrix):
+    """ Takes the s and o lists of the matrix and returns the string of each
+        both parts of the conversation. """
     s_conv = ""
     o_conv = ""
+    prev_s = None
+    prev_o = None
     for s, o in zip(matrix[0], matrix[1]):
-        if not s:
+        if not s and prev_s:
             s = " "
-        if not o:
+        if not o and prev_o:
             o = " "
         s_conv += s
         o_conv += o
+        prev_s = s
+        prev_o = o
     s_conv = s_conv.lower()
     o_conv = o_conv.lower()
     return s_conv, o_conv
@@ -282,6 +343,7 @@ def main():
             o_list.append(filename)
     for o, s, t, w in zip(o_list, s_list, t_list, w_list):
         with open(o, 'r') as f1, open(s, 'r') as f2, open(t, 'r') as f3, open(w, 'r') as f4:
+            print(o)
             f1 = f1.read()
             f2 = f2.read()
             f3 = f3.read()
@@ -338,8 +400,8 @@ def main():
         sent_lst2.append(sent_so2)
         sent_lst3.append(all_sent1)
         sent_lst4.append(all_sent2)
-        sent_tup1 = sentiment_threads(interface1)
-        sent_tup2 = sentiment_threads(interface2)
+        # sent_tup1 = sentiment_threads(interface1)
+        # sent_tup2 = sentiment_threads(interface2)
     turns_lst1 = []
     turns_lst2 = []
 
@@ -403,11 +465,11 @@ def main():
     # scatter_plot(q1, 'Mean thread length (log)', 'Conversation length', 'Sequence coherence')
     # scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)', 'Thread length vs Time')
     # scatter_plot(q3, 'Mean thread length (log)', 'Cosine similiarity', 'Cosine similiarity vs Thread length')
-    # bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
-    #                                                 'Negative_self', 'Compound_other', 'Positive_other',
-    #                                                 'Neutral_other', 'Negative_other'], "Happier interface.")
-    # bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
-    # bar_plot(sent_tup1, sent_tup2, "Correct answers", ['Check', 'Total threads'], "Predicting correct answers.")
+    bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
+                                                    'Negative_self', 'Compound_other', 'Positive_other',
+                                                    'Neutral_other', 'Negative_other'], "Happier interface.")
+    bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
+    bar_plot(sent_tup1, sent_tup2, "Correct answers", ['Check', 'Total threads'], "Predicting correct answers.")
 
 if __name__ == '__main__':
     main()
