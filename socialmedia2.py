@@ -176,6 +176,7 @@ def thread_length_time(matrix):
     # print(thread_splitted_matrix)
     for thread in thread_splitted_matrix:
         print(thread[0])
+        print(thread[1])
         # print(len(thread[0]), len(thread[1]), len(thread[2]))
         for s, o, t in zip(thread[0], thread[1], thread[2]):
             # print(type(s), type(o), type(t))
