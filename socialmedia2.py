@@ -61,8 +61,8 @@ def scatter_plot(info, xlabel, ylabel, title):
     p1 = np.poly1d(z1)
     z2 = np.polyfit(interface2_thread, interface2_conv, 1)
     p2 = np.poly1d(z2)
-    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='g', label='Single interface 1')
-    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='r', label='Double interface 2')
+    plb.plot(interface1_thread, p1(interface1_thread), 'm-', color='r', label='Single interface 1')
+    plb.plot(interface2_thread, p2(interface2_thread), 'm-', color='g', label='Double interface 2')
     plt.title(title)
     plt.legend()
     plt.show()
@@ -114,10 +114,12 @@ def thread_length_time(matrix):
     time_counter = 0
     prev_o = None
     prev_s = None
+    thr_conv = ""
     for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
         if s and prev_o or o and prev_s:
             turn_counter += 1
             time_counter += t.astype(np.float)
+
         if o == '/' or s == '/':
             thread_length_counter.append(turn_counter)
             time_length_counter.append(time_counter)
@@ -162,7 +164,8 @@ def cosine_similarity_and_sentiment(matrix):
     tup = (compound1, pos1, neu1, neg1, compound2, pos2, neu2, neg2)
 
 
-    return lst[0][1], all_tup, tup
+    return lst[0][1], all_tup, tup 
+
 
 
 def sentimentfinder(string):
@@ -171,7 +174,47 @@ def sentimentfinder(string):
     return scores['compound'], scores['pos'], scores['neu'], scores['neg']
 
 
+def sentiment_threads(matrix, ):
 
+
+    conv = ""
+    for i in range(len(matrix[0])):
+        prev_s = matrix[0][i]
+        prev_o = matrix[1][i]
+
+        # if not matrix[0][i] and prev_s:
+        #     print("1")
+        #     conv = conv +  " " + matrix[1][i]
+
+
+        if not matrix[0][i] and prev_o:
+
+            print("2")
+            conv = conv +  matrix[1][i]
+
+
+        # if not matrix[1][i] and prev_o:
+
+        #     print("3")
+        #     conv = conv +  " " + matrix[0][i]
+
+        if not matrix[1][i] and prev_s:
+
+            print("4")
+            conv = conv +  matrix[0][i]
+
+
+        print(conv)
+        threads = re.split('/[sd]', conv)
+        sent_lst = []
+        pos_counter = 0
+        for t in threads:
+            comp, pos, neu, neg = sentimentfinder(t)
+
+            if pos > neg:
+                pos_counter += 1
+        #print(pos_counter, len(threads))
+        return (pos_counter, len(threads))
 
 
 def main():
@@ -232,6 +275,7 @@ def main():
         similiarity1, all_sent1, sent_so1 = cosine_similarity_and_sentiment(interface1)
         similiarity2, all_sent2, sent_so2 = cosine_similarity_and_sentiment(interface2)
 
+
         mean1 = calculate_log_mean(thr_length1)
         mean2 = calculate_log_mean(thr_length2)
         mean3 = calculate_log_mean(time_length1)
@@ -247,6 +291,8 @@ def main():
         sent_lst2.append(sent_so2)
         sent_lst3.append(all_sent1)
         sent_lst4.append(all_sent2)
+        sent_tup1 = sentiment_threads(interface1)
+        sent_tup2 = sentiment_threads(interface2)
     turns_lst1 = []
     turns_lst2 = []
 
@@ -254,6 +300,7 @@ def main():
     compound2s, pos2s, neu2s, neg2s, compound2o, pos2o, neu2o, neg2o = zip(*sent_lst2)
     compound3, pos3, neu3, neg3 = zip(*sent_lst3)
     compound4, pos4, neu4, neg4 = zip(*sent_lst4)
+
 
     compound_mean1s = calculate_mean(compound1s)
     pos_means1s = calculate_mean(pos1s)
@@ -290,6 +337,9 @@ def main():
     q5_interface2 = (compound_means4, pos_means4, neu_means4, neg_means4)
 
 
+
+
+
     for i1, i2 in conversations:
         turns_lst1.append(sum(i1))
         turns_lst2.append(sum(i2))
@@ -300,16 +350,17 @@ def main():
 
     q1 = structure_data(thr_means1, turns_lst1, thr_means2, turns_lst2)
     q2 = structure_data(thr_means1, time_means1, thr_means2, time_means2)
-    q3 = structure_data(sim_lst1, thr_means1, sim_lst2, thr_means2)
+    q3 = structure_data(thr_means1, sim_lst1, thr_means2, sim_lst2)
 
 
-    scatter_plot(q1, 'Mean thread length (log)', 'Conversation length', 'Sequence coherence')
-    scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)', 'Thread length vs Time')
-    scatter_plot(q3, 'Cosine similiarity', 'Mean thread length (log)', 'Cosine similiarity vs Thread length')
-    bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
-                                                    'Negative_self', 'Compound_other', 'Positive_other',
-                                                    'Neutral_other', 'Negative_other'], "Happier interface.")
-    bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
+    # scatter_plot(q1, 'Mean thread length (log)', 'Conversation length', 'Sequence coherence')
+    # scatter_plot(q2, 'Mean thread length (log)', 'Mean time length (log)', 'Thread length vs Time')
+    # scatter_plot(q3, 'Mean thread length (log)', 'Cosine similiarity', 'Cosine similiarity vs Thread length')
+    # bar_plot(q4_interface1, q4_interface2, "Mean", ['Compound_self', 'Positive_self', 'Neutral_self',
+    #                                                 'Negative_self', 'Compound_other', 'Positive_other',
+    #                                                 'Neutral_other', 'Negative_other'], "Happier interface.")
+    # bar_plot(q5_interface1, q5_interface2, "Mean", ['Compound', 'Positive', 'Neutral', 'Negative'], "Emotional Synchrony.")
+    # bar_plot(sent_tup1, sent_tup2, "Correct answers", ['Check', 'Total threads'], "Predicting correct answers.")
 
 if __name__ == '__main__':
     main()
