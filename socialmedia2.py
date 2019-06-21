@@ -149,48 +149,29 @@ def interface_splitter(matrix):
 
 def thread_length_time(matrix):
     """ Counts the number of turns in each thread, and time each thread takes.
-        It goes through the s and o file and """
+        It goes through the splitted thread matrix and checks for both parties
+        if someone outputted a character, and if the other party outputted the
+        the previous character.
+        The result is a list with the number of turns for each thread, and a
+        list with the time that each thread takes. """
     thread_length_counter = []
     time_length_counter = []
     turn_counter = 0
     time_counter = 0
-
-    # prev_o = None
-    # prev_s = None
-    # sd = ['s', 'd']
-    # for s, o, t in zip(matrix[0], matrix[1], matrix[2]):
-    #     if s and prev_o or o and prev_s:
-    #         turn_counter += 1
-    #         time_counter += t.astype(np.float)
-    #     if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
-    #         thread_length_counter.append(turn_counter)
-    #         time_length_counter.append(time_counter)
-    #         turn_counter = 0
-    #         time_counter = 0
-    #     prev_o = o
-    #     prev_s = s
-
     prev_o = None
     prev_s = None
     thread_splitted_matrix = thread_splitter(matrix)
-    # print(thread_splitted_matrix)
     for thread in thread_splitted_matrix:
-        print(thread[0])
-        print(thread[1])
-        # print(len(thread[0]), len(thread[1]), len(thread[2]))
         for s, o, t in zip(thread[0], thread[1], thread[2]):
-            # print(type(s), type(o), type(t))
-            # print(s, o, t)
             if s and prev_o or o and prev_s:
                 turn_counter += 1
-                # time_counter += t.astype(np.float)
+                time_counter += t.astype(np.float)
             prev_o = o
             prev_s = s
         thread_length_counter.append(turn_counter)
         time_length_counter.append(time_counter)
         turn_counter = 0
         time_counter = 0
-        # time.sleep(1)
     return thread_length_counter, time_length_counter
 
 
@@ -212,16 +193,13 @@ def thread_splitter(matrix):
         o = matrix[1][i]
         if prev_o == '/' and o in sd or prev_s == '/' and s in sd:
             thread_end = i
-            # print(thread_start, thread_end)
-            # print(matrix[0][thread_start:thread_end])
             for j in range(len(matrix)):
-                thread.append(matrix[j][thread_start:thread_end])
+                thread.append(matrix[j][thread_start+1:thread_end-1])
             thread_matrix.append(thread)
+            thread = []
             thread_start = thread_end
         prev_s = s
         prev_o = o
-    # print(thread_start)
-    # print(len(matrix[0]))
     for i in range(len(matrix)):
         thread.append(matrix[i][thread_start:])
     thread_matrix.append(thread)
