@@ -227,8 +227,8 @@ def main():
         thr_length1, time_length1 = thread_length_time(interface1)
         thr_length2, time_length2 = thread_length_time(interface2)
         conversations.append((thr_length1, thr_length2))
-        similiarity1, sent_s1, sent_o1 = cosine_similarity_and_sentiment(interface1)
-        similiarity2, sent_s2, sent_o2 = cosine_similarity_and_sentiment(interface2)
+        similiarity1, all_sent1 sent_s1, sent_o1 = cosine_similarity_and_sentiment(interface1)
+        similiarity2, all_sent2, sent_s2, sent_o2 = cosine_similarity_and_sentiment(interface2)
 
         mean1 = calculate_log_mean(thr_length1)
         mean2 = calculate_log_mean(thr_length2)
